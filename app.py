@@ -60,9 +60,23 @@ def fill_template():
         
         exchange_rate = meta.get("exchangeRate", 1.39)
         
-        template_b64 = data.get("template", "")
-        if not template_b64:
+        # FIX: Handle both string and dict formats for template
+        template_data = data.get("template", "")
+        if not template_data:
             return {"error": "No template provided"}, 400
+        
+        # If n8n sends binary object as dict, extract the data property
+        if isinstance(template_data, dict):
+            template_b64 = template_data.get("data", "")
+            print("Received template as dict, extracted data property")
+        else:
+            template_b64 = template_data
+            print("Received template as string")
+            
+        if not template_b64:
+            return {"error": "No template data found"}, 400
+        
+        print(f"Template data type: {type(template_b64)}, length: {len(str(template_b64)[:100])}")
             
         template_bytes = base64.b64decode(template_b64)
         wb = openpyxl.load_workbook(io.BytesIO(template_bytes))

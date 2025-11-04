@@ -328,9 +328,9 @@ def populate_excel():
                         
                         ws = wb[sheet_found]
 
-# Force CSP ID column (A) to text format for all child rows
-for row in range(36, 201):
-    ws[f'A{row}'].number_format = '@'
+                # Force CSP ID column (A) to text format for all child rows
+                for row in range(36, 201):
+                        ws[f'A{row}'].number_format = '@'
                         ws[f'B{row_num}'] = child_name
                         ws[f'C{row_num}'] = food_usd
                         ws[f'C{row_num}'].number_format = currency_format
@@ -390,4 +390,5 @@ for row in range(36, 201):
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+
 

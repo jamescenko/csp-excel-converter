@@ -326,8 +326,11 @@ def populate_excel():
                         family_gift = float(child.get('familyGifts', 0))
                         total = round(food_usd + medical + family_gift, 2)
                         
-                        # Write to cells
-                        ws[f'A{row_num}'] = csp_id
+                        ws = wb[sheet_found]
+
+# Force CSP ID column (A) to text format for all child rows
+for row in range(36, 201):
+    ws[f'A{row}'].number_format = '@'
                         ws[f'B{row_num}'] = child_name
                         ws[f'C{row_num}'] = food_usd
                         ws[f'C{row_num}'].number_format = currency_format
@@ -387,3 +390,4 @@ def populate_excel():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+

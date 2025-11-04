@@ -1,6 +1,7 @@
 from flask import Flask, request, send_file, jsonify
 from openpyxl import load_workbook
 from openpyxl.styles import numbers
+from openpyxl.cell.cell import MergedCell
 from datetime import datetime
 import io
 import os
@@ -78,7 +79,7 @@ def populate_excel():
             ws['H4'] = exchange_rate
             ws['H4'].number_format = '#,##0.00'
             
-            # Regular Support Section (Rows 20-25) - CONVERT TO FLOAT
+            # Regular Support Section (Rows 20-25)
             ws['C20'] = int(summary_data.get('totalChildren', 0))
             ws['D20'] = float(summary_data.get('foodDistCAD', 0))
             ws['D20'].number_format = currency_format
@@ -95,7 +96,7 @@ def populate_excel():
             ws['E24'] = float(summary_data.get('incentiveUSD', 0))
             ws['E24'].number_format = currency_format
             
-            # D25 and E25 SUBTOTALS - CONVERT TO FLOAT FIRST
+            # D25 and E25 SUBTOTALS
             d25 = float(summary_data.get('foodDistCAD', 0)) + float(summary_data.get('salaryCAD', 0)) + float(summary_data.get('incentiveCAD', 0))
             e25 = float(summary_data.get('foodDistUSD', 0)) + float(summary_data.get('salaryUSD', 0)) + float(summary_data.get('incentiveUSD', 0))
             ws['D25'] = d25
@@ -103,7 +104,7 @@ def populate_excel():
             ws['E25'] = e25
             ws['E25'].number_format = currency_format
             
-            # Additional Support (Rows 28-30) - CONVERT TO FLOAT
+            # Additional Support (Rows 28-30)
             ws['D28'] = float(summary_data.get('familyCAD', 0))
             ws['D28'].number_format = currency_format
             ws['E28'] = float(summary_data.get('familyUSD', 0))
@@ -114,7 +115,7 @@ def populate_excel():
             ws['E29'] = float(summary_data.get('medicalUSD', 0))
             ws['E29'].number_format = currency_format
             
-            # D30 and E30 SUBTOTALS - CONVERT TO FLOAT
+            # D30 and E30 SUBTOTALS
             d30 = float(summary_data.get('familyCAD', 0)) + float(summary_data.get('medicalCAD', 0))
             e30 = float(summary_data.get('familyUSD', 0)) + float(summary_data.get('medicalUSD', 0))
             ws['D30'] = d30
@@ -128,7 +129,7 @@ def populate_excel():
             ws['E32'] = e25 + e30
             ws['E32'].number_format = currency_format
             
-            # Cross Check Section (Rows 36-43) - CONVERT TO FLOAT
+            # Cross Check Section (Rows 36-43)
             ws['C36'] = int(summary_data.get('totalChildren', 0))
             ws['C37'] = int(summary_data.get('newChildrenCount', 0))
             
@@ -155,7 +156,7 @@ def populate_excel():
             ws['D43'] = d43
             ws['D43'].number_format = currency_format
             
-            # Admin Fee & Gifts (Rows 47-51) - CONVERT TO FLOAT
+            # Admin Fee & Gifts (Rows 47-51)
             ws['C47'] = float(summary_data.get('familyCAD', 0))
             ws['C47'].number_format = currency_format
             ws['D47'] = float(summary_data.get('familyUSD', 0))
@@ -176,7 +177,7 @@ def populate_excel():
             ws['D51'] = d43 + e30
             ws['D51'].number_format = currency_format
             
-            # Summary Statistics (Rows 55-58) - COLUMN B NOT C!!!
+            # Summary Statistics (Rows 55-58)
             ws['B55'] = int(summary_data.get('totalChildren', 0))
             ws['G55'] = exchange_rate
             ws['G55'].number_format = '#,##0.00'
@@ -196,7 +197,7 @@ def populate_excel():
             ws['G58'].number_format = currency_format
             
             results['summary_updated'] = True
-            print(f"   ✅ Summary done: {summary_data.get('totalChildren', 0)} children, ${float(summary_data.get('totalCAD', 0)):,.2f} CAD")
+            print(f"   ✅ Summary done")
             
         except Exception as e:
             error_msg = f"Summary error: {str(e)}"
@@ -209,9 +210,6 @@ def populate_excel():
         # ============================================
         print(f"\n📍 PROCESSING {len(regions_data)} REGIONS...")
         
-        if not regions_data:
-            print(f"   ⚠️ CRITICAL: NO REGIONS DATA!")
-        
         for idx, region in enumerate(regions_data):
             region_code = str(region.get('code', '')).strip().upper()
             
@@ -221,7 +219,7 @@ def populate_excel():
                 results['regions_skipped'].append('UNKNOWN')
                 continue
             
-            # Find sheet (case-insensitive)
+            # Find sheet
             sheet_found = None
             for sheet_name in wb.sheetnames:
                 if sheet_name.upper() == region_code:
@@ -249,7 +247,7 @@ def populate_excel():
                 ws['B14'] = region.get('region', region_code)
                 ws['B15'] = region.get('city', '')
                 
-                # Regular Support (Rows 20-24) - CONVERT TO FLOAT
+                # Regular Support (Rows 20-24)
                 ws['C20'] = int(region.get('children', 0))
                 ws['D20'] = float(region.get('foodDistCAD', 0))
                 ws['D20'].number_format = currency_format
@@ -266,7 +264,7 @@ def populate_excel():
                 ws['E24'] = float(region.get('incentiveUSD', 0))
                 ws['E24'].number_format = currency_format
                 
-                # D25/E25 SUBTOTALS - CONVERT TO FLOAT FIRST!
+                # D25/E25 SUBTOTALS
                 d25 = float(region.get('foodDistCAD', 0)) + float(region.get('salaryCAD', 0)) + float(region.get('incentiveCAD', 0))
                 e25 = float(region.get('foodDistUSD', 0)) + float(region.get('salaryUSD', 0)) + float(region.get('incentiveUSD', 0))
                 ws['D25'] = d25
@@ -274,7 +272,7 @@ def populate_excel():
                 ws['E25'] = e25
                 ws['E25'].number_format = currency_format
                 
-                # Additional Support (Rows 28-30) - CONVERT TO FLOAT
+                # Additional Support (Rows 28-30)
                 ws['D28'] = float(region.get('familyCAD', 0))
                 ws['D28'].number_format = currency_format
                 ws['E28'] = float(region.get('familyUSD', 0))
@@ -285,7 +283,7 @@ def populate_excel():
                 ws['E29'] = float(region.get('medicalUSD', 0))
                 ws['E29'].number_format = currency_format
                 
-                # D30/E30 SUBTOTALS - CONVERT TO FLOAT
+                # D30/E30 SUBTOTALS
                 d30 = float(region.get('familyCAD', 0)) + float(region.get('medicalCAD', 0))
                 e30 = float(region.get('familyUSD', 0)) + float(region.get('medicalUSD', 0))
                 ws['D30'] = d30
@@ -302,15 +300,17 @@ def populate_excel():
                 print(f"   💰 Totals: CAD ${d25 + d30:,.2f}, USD ${e25 + e30:,.2f}")
                 
                 # ============================================
-                # Children Table (Row 36+)
+                # Children Table (Row 36+) - FIXED FOR MERGED CELLS
                 # ============================================
                 child_details = region.get('childDetails', [])
                 print(f"   👶 Children: {len(child_details)}")
                 
-                # Clear old data
+                # Clear old data (SKIP MERGED CELLS)
                 for row in range(36, 201):
                     for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
-                        ws[f'{col}{row}'] = None
+                        cell = ws[f'{col}{row}']
+                        if not isinstance(cell, MergedCell):
+                            ws[f'{col}{row}'] = None
                 
                 # Write children
                 if child_details and len(child_details) > 0:
@@ -320,12 +320,13 @@ def populate_excel():
                         csp_id = str(child.get('cspId', '')).strip()
                         child_name = str(child.get('childName', child.get('name', ''))).strip()
                         
-                        # Handle food amount - CONVERT TO FLOAT
+                        # Financial data
                         food_usd = float(child.get('foodDistUSD', 0) if child.get('foodDistUSD', 0) else child.get('foodAmount', 0))
                         medical = float(child.get('medicalGifts', 0))
                         family_gift = float(child.get('familyGifts', 0))
                         total = round(food_usd + medical + family_gift, 2)
                         
+                        # Write to cells
                         ws[f'A{row_num}'] = csp_id
                         ws[f'B{row_num}'] = child_name
                         ws[f'C{row_num}'] = food_usd
@@ -344,6 +345,8 @@ def populate_excel():
                             print(f"      ✍️ First: {csp_id} | {child_name} | ${food_usd:.2f}")
                     
                     print(f"      ✅ Wrote {len(child_details)} children")
+                else:
+                    print(f"      ⚠️ No children data")
                 
                 results['regions_processed'] += 1
                 print(f"   ✅ Region done")

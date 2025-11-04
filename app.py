@@ -78,45 +78,45 @@ def populate_excel():
             ws['H4'] = exchange_rate
             ws['H4'].number_format = '#,##0.00'
             
-            # Regular Support Section (Rows 20-25)
-            ws['C20'] = summary_data.get('totalChildren', 0)
-            ws['D20'] = summary_data.get('foodDistCAD', 0)
+            # Regular Support Section (Rows 20-25) - CONVERT TO FLOAT
+            ws['C20'] = int(summary_data.get('totalChildren', 0))
+            ws['D20'] = float(summary_data.get('foodDistCAD', 0))
             ws['D20'].number_format = currency_format
-            ws['E20'] = summary_data.get('foodDistUSD', 0)
+            ws['E20'] = float(summary_data.get('foodDistUSD', 0))
             ws['E20'].number_format = currency_format
             
-            ws['D22'] = summary_data.get('salaryCAD', 0)
+            ws['D22'] = float(summary_data.get('salaryCAD', 0))
             ws['D22'].number_format = currency_format
-            ws['E22'] = summary_data.get('salaryUSD', 0)
+            ws['E22'] = float(summary_data.get('salaryUSD', 0))
             ws['E22'].number_format = currency_format
             
-            ws['D24'] = summary_data.get('incentiveCAD', 0)
+            ws['D24'] = float(summary_data.get('incentiveCAD', 0))
             ws['D24'].number_format = currency_format
-            ws['E24'] = summary_data.get('incentiveUSD', 0)
+            ws['E24'] = float(summary_data.get('incentiveUSD', 0))
             ws['E24'].number_format = currency_format
             
-            # D25 and E25 SUBTOTALS
-            d25 = summary_data.get('foodDistCAD', 0) + summary_data.get('salaryCAD', 0) + summary_data.get('incentiveCAD', 0)
-            e25 = summary_data.get('foodDistUSD', 0) + summary_data.get('salaryUSD', 0) + summary_data.get('incentiveUSD', 0)
+            # D25 and E25 SUBTOTALS - CONVERT TO FLOAT FIRST
+            d25 = float(summary_data.get('foodDistCAD', 0)) + float(summary_data.get('salaryCAD', 0)) + float(summary_data.get('incentiveCAD', 0))
+            e25 = float(summary_data.get('foodDistUSD', 0)) + float(summary_data.get('salaryUSD', 0)) + float(summary_data.get('incentiveUSD', 0))
             ws['D25'] = d25
             ws['D25'].number_format = currency_format
             ws['E25'] = e25
             ws['E25'].number_format = currency_format
             
-            # Additional Support (Rows 28-30)
-            ws['D28'] = summary_data.get('familyCAD', 0)
+            # Additional Support (Rows 28-30) - CONVERT TO FLOAT
+            ws['D28'] = float(summary_data.get('familyCAD', 0))
             ws['D28'].number_format = currency_format
-            ws['E28'] = summary_data.get('familyUSD', 0)
+            ws['E28'] = float(summary_data.get('familyUSD', 0))
             ws['E28'].number_format = currency_format
             
-            ws['D29'] = summary_data.get('medicalCAD', 0)
+            ws['D29'] = float(summary_data.get('medicalCAD', 0))
             ws['D29'].number_format = currency_format
-            ws['E29'] = summary_data.get('medicalUSD', 0)
+            ws['E29'] = float(summary_data.get('medicalUSD', 0))
             ws['E29'].number_format = currency_format
             
-            # D30 and E30 SUBTOTALS
-            d30 = summary_data.get('familyCAD', 0) + summary_data.get('medicalCAD', 0)
-            e30 = summary_data.get('familyUSD', 0) + summary_data.get('medicalUSD', 0)
+            # D30 and E30 SUBTOTALS - CONVERT TO FLOAT
+            d30 = float(summary_data.get('familyCAD', 0)) + float(summary_data.get('medicalCAD', 0))
+            e30 = float(summary_data.get('familyUSD', 0)) + float(summary_data.get('medicalUSD', 0))
             ws['D30'] = d30
             ws['D30'].number_format = currency_format
             ws['E30'] = e30
@@ -128,42 +128,42 @@ def populate_excel():
             ws['E32'] = e25 + e30
             ws['E32'].number_format = currency_format
             
-            # Cross Check Section (Rows 36-43)
-            ws['C36'] = summary_data.get('totalChildren', 0)
-            ws['C37'] = summary_data.get('newChildrenCount', 0)
+            # Cross Check Section (Rows 36-43) - CONVERT TO FLOAT
+            ws['C36'] = int(summary_data.get('totalChildren', 0))
+            ws['C37'] = int(summary_data.get('newChildrenCount', 0))
             
-            ws['C40'] = summary_data.get('foodDistCAD', 0)
+            ws['C40'] = float(summary_data.get('foodDistCAD', 0))
             ws['C40'].number_format = currency_format
-            ws['D40'] = summary_data.get('foodDistUSD', 0)
+            ws['D40'] = float(summary_data.get('foodDistUSD', 0))
             ws['D40'].number_format = currency_format
             
-            ws['C41'] = summary_data.get('salaryCAD', 0)
+            ws['C41'] = float(summary_data.get('salaryCAD', 0))
             ws['C41'].number_format = currency_format
-            ws['D41'] = summary_data.get('salaryUSD', 0)
+            ws['D41'] = float(summary_data.get('salaryUSD', 0))
             ws['D41'].number_format = currency_format
             
-            ws['C42'] = summary_data.get('incentiveCAD', 0)
+            ws['C42'] = float(summary_data.get('incentiveCAD', 0))
             ws['C42'].number_format = currency_format
-            ws['D42'] = summary_data.get('incentiveUSD', 0)
+            ws['D42'] = float(summary_data.get('incentiveUSD', 0))
             ws['D42'].number_format = currency_format
             
             # C43 and D43 Subtotals
-            c43 = summary_data.get('foodDistCAD', 0) + summary_data.get('salaryCAD', 0) + summary_data.get('incentiveCAD', 0)
-            d43 = summary_data.get('foodDistUSD', 0) + summary_data.get('salaryUSD', 0) + summary_data.get('incentiveUSD', 0)
+            c43 = float(summary_data.get('foodDistCAD', 0)) + float(summary_data.get('salaryCAD', 0)) + float(summary_data.get('incentiveCAD', 0))
+            d43 = float(summary_data.get('foodDistUSD', 0)) + float(summary_data.get('salaryUSD', 0)) + float(summary_data.get('incentiveUSD', 0))
             ws['C43'] = c43
             ws['C43'].number_format = currency_format
             ws['D43'] = d43
             ws['D43'].number_format = currency_format
             
-            # Admin Fee & Gifts (Rows 47-51)
-            ws['C47'] = summary_data.get('familyCAD', 0)
+            # Admin Fee & Gifts (Rows 47-51) - CONVERT TO FLOAT
+            ws['C47'] = float(summary_data.get('familyCAD', 0))
             ws['C47'].number_format = currency_format
-            ws['D47'] = summary_data.get('familyUSD', 0)
+            ws['D47'] = float(summary_data.get('familyUSD', 0))
             ws['D47'].number_format = currency_format
             
-            ws['C48'] = summary_data.get('medicalCAD', 0)
+            ws['C48'] = float(summary_data.get('medicalCAD', 0))
             ws['C48'].number_format = currency_format
-            ws['D48'] = summary_data.get('medicalUSD', 0)
+            ws['D48'] = float(summary_data.get('medicalUSD', 0))
             ws['D48'].number_format = currency_format
             
             ws['C49'] = d30
@@ -177,26 +177,26 @@ def populate_excel():
             ws['D51'].number_format = currency_format
             
             # Summary Statistics (Rows 55-58) - COLUMN B NOT C!!!
-            ws['B55'] = summary_data.get('totalChildren', 0)
+            ws['B55'] = int(summary_data.get('totalChildren', 0))
             ws['G55'] = exchange_rate
             ws['G55'].number_format = '#,##0.00'
             
-            ws['B56'] = summary_data.get('newChildrenCount', 0)
-            total_usd = summary_data.get('totalUSD', 0)
-            total_children = summary_data.get('totalChildren', 1)
+            ws['B56'] = int(summary_data.get('newChildrenCount', 0))
+            total_usd = float(summary_data.get('totalUSD', 0))
+            total_children = int(summary_data.get('totalChildren', 1))
             ws['G56'] = round(total_usd / total_children, 2) if total_children > 0 else 0
             ws['G56'].number_format = currency_format
             
-            ws['B57'] = summary_data.get('totalChildren', 0)
-            ws['G57'] = summary_data.get('totalCAD', 0)
+            ws['B57'] = int(summary_data.get('totalChildren', 0))
+            ws['G57'] = float(summary_data.get('totalCAD', 0))
             ws['G57'].number_format = currency_format
             
             ws['B58'] = len(regions_data)
-            ws['G58'] = summary_data.get('totalUSD', 0)
+            ws['G58'] = float(summary_data.get('totalUSD', 0))
             ws['G58'].number_format = currency_format
             
             results['summary_updated'] = True
-            print(f"   ✅ Summary done: {summary_data.get('totalChildren', 0)} children, ${summary_data.get('totalCAD', 0):,.2f} CAD")
+            print(f"   ✅ Summary done: {summary_data.get('totalChildren', 0)} children, ${float(summary_data.get('totalCAD', 0)):,.2f} CAD")
             
         except Exception as e:
             error_msg = f"Summary error: {str(e)}"
@@ -211,9 +211,6 @@ def populate_excel():
         
         if not regions_data:
             print(f"   ⚠️ CRITICAL: NO REGIONS DATA!")
-            print(f"   Checked: data['regions'] = {data.get('regions', 'NOT FOUND')}")
-            print(f"   Checked: data['summary']['regions'] = {summary_data.get('regions', 'NOT FOUND')}")
-            print(f"   Full data keys: {list(data.keys())}")
         
         for idx, region in enumerate(regions_data):
             region_code = str(region.get('code', '')).strip().upper()
@@ -222,7 +219,6 @@ def populate_excel():
             
             if not region_code:
                 results['regions_skipped'].append('UNKNOWN')
-                print(f"   ⚠️ Skip: No code")
                 continue
             
             # Find sheet (case-insensitive)
@@ -253,45 +249,45 @@ def populate_excel():
                 ws['B14'] = region.get('region', region_code)
                 ws['B15'] = region.get('city', '')
                 
-                # Regular Support (Rows 20-24)
-                ws['C20'] = region.get('children', 0)
-                ws['D20'] = region.get('foodDistCAD', 0)
+                # Regular Support (Rows 20-24) - CONVERT TO FLOAT
+                ws['C20'] = int(region.get('children', 0))
+                ws['D20'] = float(region.get('foodDistCAD', 0))
                 ws['D20'].number_format = currency_format
-                ws['E20'] = region.get('foodDistUSD', 0)
+                ws['E20'] = float(region.get('foodDistUSD', 0))
                 ws['E20'].number_format = currency_format
                 
-                ws['D22'] = region.get('salaryCAD', 0)
+                ws['D22'] = float(region.get('salaryCAD', 0))
                 ws['D22'].number_format = currency_format
-                ws['E22'] = region.get('salaryUSD', 0)
+                ws['E22'] = float(region.get('salaryUSD', 0))
                 ws['E22'].number_format = currency_format
                 
-                ws['D24'] = region.get('incentiveCAD', 0)
+                ws['D24'] = float(region.get('incentiveCAD', 0))
                 ws['D24'].number_format = currency_format
-                ws['E24'] = region.get('incentiveUSD', 0)
+                ws['E24'] = float(region.get('incentiveUSD', 0))
                 ws['E24'].number_format = currency_format
                 
-                # D25/E25 SUBTOTALS
-                d25 = region.get('foodDistCAD', 0) + region.get('salaryCAD', 0) + region.get('incentiveCAD', 0)
-                e25 = region.get('foodDistUSD', 0) + region.get('salaryUSD', 0) + region.get('incentiveUSD', 0)
+                # D25/E25 SUBTOTALS - CONVERT TO FLOAT FIRST!
+                d25 = float(region.get('foodDistCAD', 0)) + float(region.get('salaryCAD', 0)) + float(region.get('incentiveCAD', 0))
+                e25 = float(region.get('foodDistUSD', 0)) + float(region.get('salaryUSD', 0)) + float(region.get('incentiveUSD', 0))
                 ws['D25'] = d25
                 ws['D25'].number_format = currency_format
                 ws['E25'] = e25
                 ws['E25'].number_format = currency_format
                 
-                # Additional Support (Rows 28-30)
-                ws['D28'] = region.get('familyCAD', 0)
+                # Additional Support (Rows 28-30) - CONVERT TO FLOAT
+                ws['D28'] = float(region.get('familyCAD', 0))
                 ws['D28'].number_format = currency_format
-                ws['E28'] = region.get('familyUSD', 0)
+                ws['E28'] = float(region.get('familyUSD', 0))
                 ws['E28'].number_format = currency_format
                 
-                ws['D29'] = region.get('medicalCAD', 0)
+                ws['D29'] = float(region.get('medicalCAD', 0))
                 ws['D29'].number_format = currency_format
-                ws['E29'] = region.get('medicalUSD', 0)
+                ws['E29'] = float(region.get('medicalUSD', 0))
                 ws['E29'].number_format = currency_format
                 
-                # D30/E30 SUBTOTALS
-                d30 = region.get('familyCAD', 0) + region.get('medicalCAD', 0)
-                e30 = region.get('familyUSD', 0) + region.get('medicalUSD', 0)
+                # D30/E30 SUBTOTALS - CONVERT TO FLOAT
+                d30 = float(region.get('familyCAD', 0)) + float(region.get('medicalCAD', 0))
+                e30 = float(region.get('familyUSD', 0)) + float(region.get('medicalUSD', 0))
                 ws['D30'] = d30
                 ws['D30'].number_format = currency_format
                 ws['E30'] = e30
@@ -303,44 +299,33 @@ def populate_excel():
                 ws['E32'] = e25 + e30
                 ws['E32'].number_format = currency_format
                 
+                print(f"   💰 Totals: CAD ${d25 + d30:,.2f}, USD ${e25 + e30:,.2f}")
+                
                 # ============================================
-                # Children Table (Row 36+) - FIXED VERSION
+                # Children Table (Row 36+)
                 # ============================================
                 child_details = region.get('childDetails', [])
-                
                 print(f"   👶 Children: {len(child_details)}")
-                
-                # Debug first child structure
-                if child_details and len(child_details) > 0:
-                    first_child = child_details[0]
-                    print(f"      First child keys: {list(first_child.keys())}")
-                    print(f"      First child ID: {first_child.get('cspId', 'MISSING')}")
                 
                 # Clear old data
                 for row in range(36, 201):
                     for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
                         ws[f'{col}{row}'] = None
                 
-                # Write children - FIXED LOGIC
+                # Write children
                 if child_details and len(child_details) > 0:
                     for child_idx, child in enumerate(child_details):
                         row_num = 36 + child_idx
                         
-                        # Get values with type conversion
                         csp_id = str(child.get('cspId', '')).strip()
                         child_name = str(child.get('childName', child.get('name', ''))).strip()
                         
-                        # Handle food amount - try both field names
-                        food_usd = child.get('foodDistUSD', 0)
-                        if food_usd == 0:
-                            food_usd = child.get('foodAmount', 0)
-                        food_usd = float(food_usd) if food_usd else 0.0
-                        
+                        # Handle food amount - CONVERT TO FLOAT
+                        food_usd = float(child.get('foodDistUSD', 0) if child.get('foodDistUSD', 0) else child.get('foodAmount', 0))
                         medical = float(child.get('medicalGifts', 0))
                         family_gift = float(child.get('familyGifts', 0))
                         total = round(food_usd + medical + family_gift, 2)
                         
-                        # Write to cells
                         ws[f'A{row_num}'] = csp_id
                         ws[f'B{row_num}'] = child_name
                         ws[f'C{row_num}'] = food_usd
@@ -355,13 +340,10 @@ def populate_excel():
                         
                         results['children_written'] += 1
                         
-                        # Debug first child
                         if child_idx == 0:
-                            print(f"      ✍️ Wrote: {csp_id} | {child_name} | ${food_usd:.2f}")
+                            print(f"      ✍️ First: {csp_id} | {child_name} | ${food_usd:.2f}")
                     
-                    print(f"      ✅ Wrote {len(child_details)} children to rows 36-{35 + len(child_details)}")
-                else:
-                    print(f"      ⚠️ No children to write")
+                    print(f"      ✅ Wrote {len(child_details)} children")
                 
                 results['regions_processed'] += 1
                 print(f"   ✅ Region done")
@@ -383,7 +365,8 @@ def populate_excel():
         print(f"   Summary: {'✓' if results['summary_updated'] else '✗'}")
         print(f"   Regions: {results['regions_processed']}/{len(regions_data)}")
         print(f"   Children: {results['children_written']}")
-        print(f"   Skipped: {', '.join(results['regions_skipped'][:5]) if results['regions_skipped'] else 'none'}")
+        if results['regions_skipped']:
+            print(f"   Skipped: {', '.join(results['regions_skipped'][:10])}")
         print(f"{'='*80}\n")
         
         return send_file(

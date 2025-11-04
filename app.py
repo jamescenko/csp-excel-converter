@@ -306,7 +306,7 @@ def populate_excel():
                 print(f"   👶 Children: {len(child_details)}")
                 
                 # Clear old data (SKIP MERGED CELLS)
-                for row in range(36, 201):
+                for row in range(37, 201):
                     for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
                         cell = ws[f'{col}{row}']
                         if not isinstance(cell, MergedCell):
@@ -315,7 +315,7 @@ def populate_excel():
                 # Write children
                 if child_details and len(child_details) > 0:
                     for child_idx, child in enumerate(child_details):
-                        row_num = 36 + child_idx
+                        row_num = 37 + child_idx
                         
                         csp_id = str(child.get('cspId', '')).strip()
                         child_name = str(child.get('childName', child.get('name', ''))).strip()
@@ -328,6 +328,7 @@ def populate_excel():
                         
                         # Write to cells
                         ws[f'A{row_num}'] = csp_id
+                        ws[f'A{row_num}'].number_format = '@'
                         ws[f'B{row_num}'] = child_name
                         ws[f'C{row_num}'] = food_usd
                         ws[f'C{row_num}'].number_format = currency_format
@@ -387,3 +388,4 @@ def populate_excel():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
+

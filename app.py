@@ -1,213 +1,249 @@
-from flask import Flask, request, send_file
-import openpyxl
-from openpyxl.cell.cell import MergedCell
-from openpyxl.styles import numbers
-from copy import copy
+from flask import Flask, request, send_file, jsonify
+from openpyxl import load_workbook
+from datetime import datetime
 import io
-import base64
+import os
 
 app = Flask(__name__)
 
-def safe_write_cell(ws, cell_ref, value, is_currency=False):
-    """Safely write to a cell, handling merged cells and formatting"""
-    try:
-        cell = ws[cell_ref]
-        if isinstance(cell, MergedCell):
-            for merged_range in ws.merged_cells.ranges:
-                if cell.coordinate in merged_range:
-                    master_cell = ws.cell(merged_range.min_row, merged_range.min_col)
-                    master_cell.value = value
-                    if is_currency:
-                        master_cell.number_format = '$#,##0.00'
-                    return
-        else:
-            cell.value = value
-            if is_currency:
-                cell.number_format = '$#,##0.00'
-    except Exception as e:
-        print(f"Warning: Could not write to {cell_ref}: {e}")
+@app.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        "status": "healthy", 
+        "message": "CSP Excel Service Running",
+        "timestamp": datetime.now().isoformat()
+    })
 
-def copy_sheet(source_sheet, target_sheet):
-    """Copy sheet structure including formatting"""
-    for row in source_sheet.iter_rows():
-        for cell in row:
-            new_cell = target_sheet[cell.coordinate]
-            if cell.has_style:
-                new_cell.font = copy(cell.font)
-                new_cell.border = copy(cell.border)
-                new_cell.fill = copy(cell.fill)
-                new_cell.number_format = copy(cell.number_format)
-                new_cell.protection = copy(cell.protection)
-                new_cell.alignment = copy(cell.alignment)
-            if cell.value:
-                new_cell.value = cell.value
-    
-    # Copy merged cells
-    for merged_cell_range in source_sheet.merged_cells.ranges:
-        target_sheet.merge_cells(str(merged_cell_range))
-    
-    # Copy column widths
-    for col in source_sheet.column_dimensions:
-        target_sheet.column_dimensions[col].width = source_sheet.column_dimensions[col].width
-    
-    # Copy row heights
-    for row in source_sheet.row_dimensions:
-        target_sheet.row_dimensions[row].height = source_sheet.row_dimensions[row].height
-
-@app.route('/convert', methods=['POST'])
-def fill_template():
+@app.route('/populate-excel', methods=['POST'])
+def populate_excel():
+    """
+    Receives calculation data from n8n and returns populated Excel
+    """
     try:
         data = request.json
+        if not data:
+            return jsonify({"error": "No data received"}), 400
         
-        meta = data.get("meta", {})
-        summary = data.get("summary", {})
-        regions = data.get("regions", [])
+        # Extract main sections
+        summary_data = data.get('summary', {})
+        regions_data = data.get('regions', [])
+        exchange_rate = float(data.get('exchangeRate', 1.39))
+        period_from = data.get('reportPeriodFrom', '')
+        period_to = data.get('reportPeriodTo', '')
         
-        exchange_rate = meta.get("exchangeRate", 1.39)
+        print(f"📥 Processing {len(regions_data)} regions with {summary_data.get('totalChildren', 0)} children")
         
-        # Handle both string and dict formats for template
-        template_data = data.get("template", "")
-        if not template_data:
-            return {"error": "No template provided"}, 400
+        # Load template
+        template_path = 'CSP_Automate_Template.xlsx'
+        if not os.path.exists(template_path):
+            return jsonify({"error": "Template not found"}), 500
         
-        if isinstance(template_data, dict):
-            template_b64 = template_data.get("data", "")
-            print("Received template as dict, extracted data property")
-        else:
-            template_b64 = template_data
-            print("Received template as string")
+        wb = load_workbook(template_path)
+        
+        results = {
+            "summary_updated": False,
+            "regions_processed": 0,
+            "regions_skipped": [],
+            "children_written": 0
+        }
+        
+        # ============================================
+        # POPULATE SUMMARY SHEET
+        # ============================================
+        try:
+            ws = wb['Summary']
             
-        if not template_b64:
-            return {"error": "No template data found"}, 400
+            # Period & Exchange Rate (Top section)
+            ws['B4'] = period_from
+            ws['B5'] = period_to
+            ws['H4'] = exchange_rate
             
-        template_bytes = base64.b64decode(template_b64)
-        wb = openpyxl.load_workbook(io.BytesIO(template_bytes))
+            # Regular Support Section (Rows 20-25)
+            ws['C20'] = summary_data.get('totalChildren', 0)
+            ws['D20'] = summary_data.get('foodDistCAD', 0)
+            ws['E20'] = summary_data.get('foodDistUSD', 0)
+            ws['D22'] = summary_data.get('salaryCAD', 0)
+            ws['E22'] = summary_data.get('salaryUSD', 0)
+            ws['D24'] = summary_data.get('incentiveCAD', 0)
+            ws['E24'] = summary_data.get('incentiveUSD', 0)
+            # D25 and E25 are SUBTOTALS (Regular Support)
+            ws['D25'] = summary_data.get('foodDistCAD', 0) + summary_data.get('salaryCAD', 0) + summary_data.get('incentiveCAD', 0)
+            ws['E25'] = summary_data.get('foodDistUSD', 0) + summary_data.get('salaryUSD', 0) + summary_data.get('incentiveUSD', 0)
+            
+            # Additional Support (Rows 28-30)
+            ws['D28'] = summary_data.get('familyCAD', 0)
+            ws['E28'] = summary_data.get('familyUSD', 0)
+            ws['D29'] = summary_data.get('medicalCAD', 0)
+            ws['E29'] = summary_data.get('medicalUSD', 0)
+            # D30 and E30 are SUBTOTALS (Additional Support/After Admin Fee)
+            ws['D30'] = summary_data.get('familyCAD', 0) + summary_data.get('medicalCAD', 0)
+            ws['E30'] = summary_data.get('familyUSD', 0) + summary_data.get('medicalUSD', 0)
+            
+            # D32 and E32 are GRAND TOTALS
+            ws['D32'] = ws['D25'].value + ws['D30'].value
+            ws['E32'] = ws['E25'].value + ws['E30'].value
+            
+            # Cross Check Section (Rows 36-43)
+            ws['C36'] = summary_data.get('totalChildren', 0)  # # of active child
+            ws['C37'] = summary_data.get('newChildrenCount', 0)  # # of New Child
+            ws['C40'] = summary_data.get('foodDistCAD', 0)  # Food CAD
+            ws['D40'] = summary_data.get('foodDistUSD', 0)  # Food USD
+            ws['C41'] = summary_data.get('salaryCAD', 0)  # Salary CAD
+            ws['D41'] = summary_data.get('salaryUSD', 0)  # Salary USD
+            ws['C42'] = summary_data.get('incentiveCAD', 0)  # Incentive CAD
+            ws['D42'] = summary_data.get('incentiveUSD', 0)  # Incentive USD
+            # C43 and D43 are Subtotals
+            ws['C43'] = ws['C40'].value + ws['C41'].value + ws['C42'].value
+            ws['D43'] = ws['D40'].value + ws['D41'].value + ws['D42'].value
+            
+            # Admin Fee & Gifts Section (Rows 47-51)
+            ws['C47'] = summary_data.get('familyCAD', 0)
+            ws['D47'] = summary_data.get('familyUSD', 0)
+            ws['C48'] = summary_data.get('medicalCAD', 0)
+            ws['D48'] = summary_data.get('medicalUSD', 0)
+            # C49 and D49 are Subtotals
+            ws['C49'] = ws['C47'].value + ws['C48'].value
+            ws['D49'] = ws['D47'].value + ws['D48'].value
+            # C51 and D51 are Grand Totals (after admin fee)
+            ws['C51'] = ws['C43'].value + ws['C49'].value
+            ws['D51'] = ws['D43'].value + ws['D49'].value
+            
+            # Summary Statistics Section (Rows 55-58)
+            # Left column values (B or C), Right column values (G)
+            ws['C55'] = summary_data.get('totalChildren', 0)  # Total Active Children
+            ws['G55'] = exchange_rate  # Exchange Rate
+            
+            ws['C56'] = summary_data.get('newChildrenCount', 0)  # New Children
+            total_usd = summary_data.get('totalUSD', 0)
+            total_children = summary_data.get('totalChildren', 0)
+            avg_per_child = round(total_usd / total_children, 2) if total_children > 0 else 0
+            ws['G56'] = avg_per_child  # Avg per Child (USD)
+            
+            ws['C57'] = summary_data.get('totalChildren', 0)  # Food Recipients
+            ws['G57'] = summary_data.get('totalCAD', 0)  # Total CAD Amount
+            
+            ws['C58'] = len(regions_data)  # Salary Support Recipients
+            ws['G58'] = summary_data.get('totalUSD', 0)  # Total USD Amount
+            
+            results['summary_updated'] = True
+            print("✅ Summary sheet populated")
+            
+        except Exception as e:
+            print(f"❌ Summary error: {str(e)}")
         
-        def safe_float(val):
+        # ============================================
+        # POPULATE REGION SHEETS
+        # ============================================
+        for region in regions_data:
+            region_code = region.get('code', '').strip()
+            
+            if not region_code or region_code not in wb.sheetnames:
+                results['regions_skipped'].append(region_code or 'UNKNOWN')
+                print(f"⚠️ Sheet '{region_code}' not found")
+                continue
+            
             try:
-                return float(val)
-            except:
-                return 0.0
+                ws = wb[region_code]
+                
+                # Period & Exchange Rate
+                ws['B4'] = period_from
+                ws['B5'] = period_to
+                ws['H4'] = exchange_rate  # CORRECT: H4 not G4
+                
+                # Wire & Location Info
+                ws['B10'] = str(region.get('wireId', ''))  # Partner ID
+                ws['B11'] = region.get('caseworker', 'Unknown')  # Caseworker
+                ws['B13'] = region.get('beneficiary', '')  # Beneficiary
+                ws['B14'] = region.get('region', region_code)  # Region
+                ws['B15'] = region.get('city', '')  # City
+                
+                # Regular Support Section (Rows 20-24)
+                ws['C20'] = region.get('children', 0)
+                ws['D20'] = region.get('foodDistCAD', 0)
+                ws['E20'] = region.get('foodDistUSD', 0)
+                ws['D22'] = region.get('salaryCAD', 0)
+                ws['E22'] = region.get('salaryUSD', 0)
+                ws['D24'] = region.get('incentiveCAD', 0)
+                ws['E24'] = region.get('incentiveUSD', 0)
+                
+                # D25 and E25 are SUBTOTALS (Regular Support)
+                ws['D25'] = ws['D20'].value + ws['D22'].value + ws['D24'].value
+                ws['E25'] = ws['E20'].value + ws['E22'].value + ws['E24'].value
+                
+                # Additional Support (Rows 28-30)
+                ws['D28'] = region.get('familyCAD', 0)
+                ws['E28'] = region.get('familyUSD', 0)
+                ws['D29'] = region.get('medicalCAD', 0)
+                ws['E29'] = region.get('medicalUSD', 0)
+                
+                # D30 and E30 are SUBTOTALS (Additional Support)
+                ws['D30'] = ws['D28'].value + ws['D29'].value
+                ws['E30'] = ws['E28'].value + ws['E29'].value
+                
+                # D32 and E32 are GRAND TOTALS
+                ws['D32'] = ws['D25'].value + ws['D30'].value
+                ws['E32'] = ws['E25'].value + ws['E30'].value
+                
+                # ============================================
+                # POPULATE CHILDREN DETAILS TABLE (Row 36+)
+                # ============================================
+                child_details = region.get('childDetails', [])
+                
+                # Clear old data (rows 36-200)
+                for row in range(36, 201):
+                    for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
+                        ws[f'{col}{row}'] = None
+                
+                # Write new children data starting at row 36
+                if child_details:
+                    start_row = 36
+                    for idx, child in enumerate(child_details):
+                        row = start_row + idx
+                        
+                        ws[f'A{row}'] = child.get('cspId', '')
+                        ws[f'B{row}'] = child.get('childName', child.get('name', ''))
+                        
+                        # Financial data
+                        food_usd = child.get('foodDistUSD', child.get('foodAmount', 0))
+                        medical = child.get('medicalGifts', 0)
+                        family = child.get('familyGifts', 0)
+                        
+                        ws[f'C{row}'] = food_usd
+                        ws[f'D{row}'] = medical
+                        ws[f'E{row}'] = family
+                        ws[f'F{row}'] = round(food_usd + medical + family, 2)
+                        ws[f'G{row}'] = ''  # Signature
+                        
+                        results['children_written'] += 1
+                
+                results['regions_processed'] += 1
+                print(f"✅ {region_code}: {len(child_details)} children")
+                
+            except Exception as e:
+                results['regions_skipped'].append(region_code)
+                print(f"❌ {region_code}: {str(e)}")
         
-        # === SUMMARY SHEET ===
-        ws = wb["Summary"]
-        
-        # Exchange Rate (G4) - NO dollar sign for exchange rate
-        safe_write_cell(ws, "G4", float(exchange_rate), is_currency=False)
-        
-        # Support Summary Table
-        # Food Distribution (row 20)
-        safe_write_cell(ws, "C20", summary.get("totalChildren", 0), is_currency=False)  # Number of children
-        safe_write_cell(ws, "D20", safe_float(summary.get("foodDistCAD", 0)), is_currency=True)
-        safe_write_cell(ws, "E20", safe_float(summary.get("foodDistUSD", 0)), is_currency=True)
-        
-        # Salary case-worker (row 22)
-        safe_write_cell(ws, "D22", safe_float(summary.get("salaryCAD", 0)), is_currency=True)
-        safe_write_cell(ws, "E22", safe_float(summary.get("salaryUSD", 0)), is_currency=True)
-        
-        # Subtotal Regular Support (row 25)
-        safe_write_cell(ws, "D25", safe_float(summary.get("foodDistCAD", 0)) + safe_float(summary.get("salaryCAD", 0)), is_currency=True)
-        safe_write_cell(ws, "E25", safe_float(summary.get("foodDistUSD", 0)) + safe_float(summary.get("salaryUSD", 0)), is_currency=True)
-        
-        # Additional Support
-        # Family gifts (row 28)
-        safe_write_cell(ws, "D28", safe_float(summary.get("familyCADTotal", 0)), is_currency=True)
-        safe_write_cell(ws, "E28", safe_float(summary.get("familyUSDTotal", 0)), is_currency=True)
-        
-        # Medical gifts (row 29)
-        safe_write_cell(ws, "D29", safe_float(summary.get("medicalCADTotal", 0)), is_currency=True)
-        safe_write_cell(ws, "E29", safe_float(summary.get("medicalUSDTotal", 0)), is_currency=True)
-        
-        # Subtotal Additional (row 30)
-        safe_write_cell(ws, "D30", safe_float(summary.get("familyCADTotal", 0)) + safe_float(summary.get("medicalCADTotal", 0)), is_currency=True)
-        safe_write_cell(ws, "E30", safe_float(summary.get("familyUSDTotal", 0)) + safe_float(summary.get("medicalUSDTotal", 0)), is_currency=True)
-        
-        # GRAND TOTAL (row 32)
-        safe_write_cell(ws, "D32", safe_float(summary.get("totalCAD", 0)), is_currency=True)
-        safe_write_cell(ws, "E32", safe_float(summary.get("totalUSD", 0)), is_currency=True)
-        
-        # === REGION SHEETS ===
-        if "Region" not in wb.sheetnames:
-            print("Warning: No 'Region' template sheet found")
-        else:
-            region_template = wb["Region"]
-            
-            # Process each region
-            for region_data in regions:
-                region_name = region_data.get("region", "")
-                
-                if "GRAND COUNT" in region_name or not region_name:
-                    continue
-                
-                # Sanitize sheet name
-                sheet_name = region_name.replace(":", "-").replace("/", "-").replace("\\", "-")
-                sheet_name = sheet_name.replace("?", "").replace("*", "").replace("[", "(").replace("]", ")")
-                sheet_name = sheet_name[:31]
-                
-                print(f"Processing region: {sheet_name}")
-                
-                # Create new sheet from template
-                if sheet_name in wb.sheetnames:
-                    ws_r = wb[sheet_name]
-                else:
-                    ws_r = wb.create_sheet(title=sheet_name)
-                    copy_sheet(region_template, ws_r)
-                
-                # Exchange Rate (G4)
-                safe_write_cell(ws_r, "G4", float(exchange_rate), is_currency=False)
-                
-                # CRITICAL: Region sheets use DIFFERENT ROWS than Summary!
-                # Looking at your images, Region sheet structure is different
-                
-                # Support Summary Table - REGIONS USE ROW 20 for Food Distribution
-                safe_write_cell(ws_r, "D20", region_data.get("children", 0), is_currency=False)  # Number of children
-                safe_write_cell(ws_r, "E20", safe_float(region_data.get("foodDistCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F20", safe_float(region_data.get("foodDistUSD", 0)), is_currency=True)
-                
-                # Salary (row 22)
-                safe_write_cell(ws_r, "E22", safe_float(region_data.get("salaryCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F22", safe_float(region_data.get("salaryUSD", 0)), is_currency=True)
-                
-                # Subtotal Regular (row 25)
-                safe_write_cell(ws_r, "E25", safe_float(region_data.get("foodDistCAD", 0)) + safe_float(region_data.get("salaryCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F25", safe_float(region_data.get("foodDistUSD", 0)) + safe_float(region_data.get("salaryUSD", 0)), is_currency=True)
-                
-                # Additional Support
-                # Family gifts (row 28)
-                safe_write_cell(ws_r, "E28", safe_float(region_data.get("familyCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F28", safe_float(region_data.get("familyUSD", 0)), is_currency=True)
-                
-                # Medical gifts (row 29)
-                safe_write_cell(ws_r, "E29", safe_float(region_data.get("medicalCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F29", safe_float(region_data.get("medicalUSD", 0)), is_currency=True)
-                
-                # Subtotal Additional (row 30)
-                safe_write_cell(ws_r, "E30", safe_float(region_data.get("familyCAD", 0)) + safe_float(region_data.get("medicalCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F30", safe_float(region_data.get("familyUSD", 0)) + safe_float(region_data.get("medicalUSD", 0)), is_currency=True)
-                
-                # GRAND TOTAL (row 32)
-                safe_write_cell(ws_r, "E32", safe_float(region_data.get("totalCAD", 0)), is_currency=True)
-                safe_write_cell(ws_r, "F32", safe_float(region_data.get("totalUSD", 0)), is_currency=True)
-        
-        # Save and return
+        # ============================================
+        # SAVE AND RETURN
+        # ============================================
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
         
-        print("SUCCESS: File generated successfully")
+        print(f"\n✅ COMPLETE: {results['regions_processed']} regions, {results['children_written']} children")
         
         return send_file(
             output,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name="CSP-Report-Filled.xlsx"
+            download_name=f'CSP_Wiring_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
         )
-        
+    
     except Exception as e:
-        print(f"ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return {"error": str(e), "details": type(e).__name__}, 500
+        print(f"❌ CRITICAL: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)

@@ -303,47 +303,75 @@ def populate_excel():
                 ws['E32'] = e25 + e30
                 ws['E32'].number_format = currency_format
                 
-                # Children Table (Row 36+)
+                # ============================================
+                # Children Table (Row 36+) - FIXED VERSION
+                # ============================================
                 child_details = region.get('childDetails', [])
-                print(f"   {len(child_details)} kids")
+                
+                print(f"   👶 Children: {len(child_details)}")
+                
+                # Debug first child structure
+                if child_details and len(child_details) > 0:
+                    first_child = child_details[0]
+                    print(f"      First child keys: {list(first_child.keys())}")
+                    print(f"      First child ID: {first_child.get('cspId', 'MISSING')}")
                 
                 # Clear old data
                 for row in range(36, 201):
                     for col in ['A', 'B', 'C', 'D', 'E', 'F', 'G']:
                         ws[f'{col}{row}'] = None
                 
-                # Write children
-                if child_details:
+                # Write children - FIXED LOGIC
+                if child_details and len(child_details) > 0:
                     for child_idx, child in enumerate(child_details):
-                        row = 36 + child_idx
+                        row_num = 36 + child_idx
                         
-                        ws[f'A{row}'] = child.get('cspId', '')
-                        ws[f'B{row}'] = child.get('childName', child.get('name', ''))
+                        # Get values with type conversion
+                        csp_id = str(child.get('cspId', '')).strip()
+                        child_name = str(child.get('childName', child.get('name', ''))).strip()
                         
-                        food_usd = child.get('foodDistUSD', child.get('foodAmount', 0))
-                        medical = child.get('medicalGifts', 0)
-                        family_gift = child.get('familyGifts', 0)
+                        # Handle food amount - try both field names
+                        food_usd = child.get('foodDistUSD', 0)
+                        if food_usd == 0:
+                            food_usd = child.get('foodAmount', 0)
+                        food_usd = float(food_usd) if food_usd else 0.0
                         
-                        ws[f'C{row}'] = food_usd
-                        ws[f'C{row}'].number_format = currency_format
-                        ws[f'D{row}'] = medical
-                        ws[f'D{row}'].number_format = currency_format
-                        ws[f'E{row}'] = family_gift
-                        ws[f'E{row}'].number_format = currency_format
-                        ws[f'F{row}'] = round(food_usd + medical + family_gift, 2)
-                        ws[f'F{row}'].number_format = currency_format
-                        ws[f'G{row}'] = ''
+                        medical = float(child.get('medicalGifts', 0))
+                        family_gift = float(child.get('familyGifts', 0))
+                        total = round(food_usd + medical + family_gift, 2)
+                        
+                        # Write to cells
+                        ws[f'A{row_num}'] = csp_id
+                        ws[f'B{row_num}'] = child_name
+                        ws[f'C{row_num}'] = food_usd
+                        ws[f'C{row_num}'].number_format = currency_format
+                        ws[f'D{row_num}'] = medical
+                        ws[f'D{row_num}'].number_format = currency_format
+                        ws[f'E{row_num}'] = family_gift
+                        ws[f'E{row_num}'].number_format = currency_format
+                        ws[f'F{row_num}'] = total
+                        ws[f'F{row_num}'].number_format = currency_format
+                        ws[f'G{row_num}'] = ''
                         
                         results['children_written'] += 1
+                        
+                        # Debug first child
+                        if child_idx == 0:
+                            print(f"      ✍️ Wrote: {csp_id} | {child_name} | ${food_usd:.2f}")
+                    
+                    print(f"      ✅ Wrote {len(child_details)} children to rows 36-{35 + len(child_details)}")
+                else:
+                    print(f"      ⚠️ No children to write")
                 
                 results['regions_processed'] += 1
-                print(f"   ✅ Done")
+                print(f"   ✅ Region done")
                 
             except Exception as e:
                 error_msg = f"{region_code}: {str(e)}"
                 results['errors'].append(error_msg)
                 results['regions_skipped'].append(region_code)
                 print(f"   ❌ {str(e)}")
+                print(traceback.format_exc())
         
         # SAVE
         output = io.BytesIO()

@@ -359,12 +359,10 @@ def populate_excel():
                 print(traceback.format_exc())
         
         # SAVE
-        if 'Summary' in wb.sheetnames:
-            wb.active = wb['Summary']
-            output = io.BytesIO()
-            wb.save(output)
-            output.seek(0)
-            
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
         print(f"\n{'='*80}")
         print(f"✅ FINAL RESULTS:")
         print(f"   Summary: {'✓' if results['summary_updated'] else '✗'}")
@@ -389,4 +387,3 @@ def populate_excel():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port)
-

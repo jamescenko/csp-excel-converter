@@ -359,8 +359,8 @@ def populate_excel():
                 print(traceback.format_exc())
         
         # SAVE
-	if 'Summary' in wb.sheetnames:
-    		wb.active = wb['Summary']
+if 'Summary' in wb.sheetnames:
+        wb.active = wb['Summary']
         output = io.BytesIO()
         wb.save(output)
         output.seek(0)
